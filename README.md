@@ -23,10 +23,10 @@
 
 ```xml
 <dependency>
-    <groupId>org.ministack</groupId>
-    <artifactId>testcontainers-ministack</artifactId>
-    <version>0.1.0</version>
-    <scope>test</scope>
+  <groupId>org.ministack</groupId>
+  <artifactId>testcontainers-ministack</artifactId>
+  <version>0.1.0</version>
+  <scope>test</scope>
 </dependency>
 ```
 
@@ -39,15 +39,15 @@ testImplementation 'org.ministack:testcontainers-ministack:0.1.0'
 ### Quick start
 
 ```java
-try (MiniStackContainer ministack = new MiniStackContainer()) {
+try(MiniStackContainer ministack = new MiniStackContainer()){
     ministack.start();
     String endpoint = ministack.getEndpoint();
 
     S3Client s3 = S3Client.builder()
             .endpointOverride(URI.create(endpoint))
-            .region(Region.US_EAST_1)
+            .region(ministack.getRegion())
             .credentialsProvider(StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create("test", "test")))
+                    AwsBasicCredentials.create(ministack.getAccessKey(), ministack.getSecretKey())))
             .forcePathStyle(true)
             .build();
 
@@ -84,12 +84,12 @@ MiniStackContainer ministack = new MiniStackContainer("1.2.5");
 
 Coming when requested. Open an issue or upvote [ministackorg/ministack](https://github.com/ministackorg/ministack/issues/250).
 
-| Language | Status |
-|----------|--------|
-| Java | **Published** on Maven Central |
-| Go | Planned |
-| Python | Planned |
-| .NET | Planned |
+| Language | Status                         |
+|----------|--------------------------------|
+| Java     | **Published** on Maven Central |
+| Go       | Planned                        |
+| Python   | Planned                        |
+| .NET     | Planned                        |
 
 ## License
 

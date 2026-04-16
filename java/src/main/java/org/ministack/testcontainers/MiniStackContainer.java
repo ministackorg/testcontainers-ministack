@@ -1,5 +1,7 @@
 package org.ministack.testcontainers;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
@@ -57,10 +59,16 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
     /**
      * Returns the endpoint URL for connecting AWS SDK clients.
      *
-     * @return endpoint URL (e.g. "http://localhost:32789")
+     * @return endpoint URL (e.g. "http://127.0.0.1:32789")
      */
     public String getEndpoint() {
-        return String.format("http://%s:%d", getHost(), getMappedPort(PORT));
+        try {
+            final String address = getHost();
+            String ipAddress = InetAddress.getByName(address).getHostAddress();
+            return String.format("http://%s:%d", ipAddress, getMappedPort(PORT));
+        } catch (UnknownHostException e) {
+            throw new IllegalStateException("Cannot obtain endpoint URL", e);
+        }
     }
 
     /**
