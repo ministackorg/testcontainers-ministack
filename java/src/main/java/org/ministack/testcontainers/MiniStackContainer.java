@@ -74,7 +74,6 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
     }
 
     /**
-<<<<<<< feat/flag_to_enable_real_infra
      * Activates real infrastructure mode.
      *
      * RDS spins up actual Postgres/MySQL containers, ElastiCache spins up real Redis, Athena runs real SQL via DuckDB, ECS runs real Docker containers.
@@ -82,7 +81,9 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
      */
     public MiniStackContainer withRealInfrastructure() {
         return withFileSystemBind(DockerClientFactory.instance().getRemoteDockerUnixSocketPath(), "/var/run/docker.sock");
-=======
+    }
+
+    /**
      * Returns the AWS access key ID.
      *
      * @return the access key ID
@@ -107,6 +108,5 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
      */
     public String getRegion() {
         return this.getEnvMap().getOrDefault("MINISTACK_REGION", DEFAULT_REGION);
->>>>>>> main
     }
 }
