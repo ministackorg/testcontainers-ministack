@@ -72,6 +72,31 @@ public MiniStackContainer miniStackContainer() {
 MiniStackContainer ministack = new MiniStackContainer("1.2.5");
 ```
 
+### Real Infrastructure
+```java
+try(MiniStackContainer ministack = new MiniStackContainer()){
+    ministack.withRealInfrastructure();
+    ministack.start();
+    String endpoint = ministack.getEndpoint();
+
+    RdsClient rds = RdsClient.builder().endpointOverride(endpoint()).region(region)
+            .credentialsProvider(creds).build();
+
+    CreateDbInstanceResponse createDbInstanceResponse = rds.createDBInstance(b -> b
+            .dbInstanceIdentifier("postgres")
+            .dbInstanceClass("db.t3.micro")
+            .engine("postgres")
+            .masterUsername("admin")
+            .masterUserPassword("password")
+            .dbName("postgresdb")
+            .allocatedStorage(20)
+    );
+    
+    // Ministack will create and start a postgres docker container
+    // Before you connect to postgres you have to wait until the container is started
+}
+```
+
 ### What you get
 
 - All 41 AWS services on a single container
