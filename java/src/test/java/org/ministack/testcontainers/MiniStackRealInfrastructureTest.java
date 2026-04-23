@@ -7,9 +7,13 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.postgresql.util.PSQLException;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
+import redis.clients.jedis.Jedis;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.elasticache.ElastiCacheClient;
+import software.amazon.awssdk.services.elasticache.model.CacheNode;
+import software.amazon.awssdk.services.elasticache.model.CreateCacheClusterResponse;
 import software.amazon.awssdk.services.rds.RdsClient;
 import software.amazon.awssdk.services.rds.model.CreateDbInstanceResponse;
 import software.amazon.awssdk.services.rds.model.Endpoint;
@@ -19,10 +23,9 @@ import java.sql.DriverManager;
 import java.sql.SQLNonTransientConnectionException;
 import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class MiniStackRealInfrastructureTest {
+class MiniStackRealInfrastructureTest {
 
     static MiniStackContainer ministack = new MiniStackContainer("latest");
     static StaticCredentialsProvider creds;
@@ -221,5 +224,48 @@ public class MiniStackRealInfrastructureTest {
 
         // Manually stop and remove DB container because it is not handled by Testcontainers
         rds.deleteDBInstance(b -> b.dbInstanceIdentifier(dbInstanceIdentifier));
+    }
+
+    // -----------------------------------------------------------------------
+    // ElastiCache (real infrastructure)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void elasticacheCreatecacheCluster() {
+        ElastiCacheClient elastiCache = ElastiCacheClient.builder()
+                .endpointOverride(endpoint())
+                .region(region)
+                .credentialsProvider(creds)
+                .build();
+
+        String cacheClusterId = "tc-redis";
+        String redisKey = "key";
+        String redisValue = "value";
+
+        CreateCacheClusterResponse res = elastiCache.createCacheCluster(b -> b
+                .cacheClusterId(cacheClusterId)
+                .engine("redis")
+                .cacheNodeType("cache.t3.micro")
+                .numCacheNodes(1)
+        );
+
+        assertEquals(cacheClusterId, res.cacheCluster().cacheClusterId());
+        assertEquals("redis", res.cacheCluster().engine());
+        assertEquals(1, res.cacheCluster().numCacheNodes());
+
+        CacheNode cacheNode = res.cacheCluster().cacheNodes().get(0);
+        String redisHost = cacheNode.endpoint().address();
+        int redisPort = cacheNode.endpoint().port();
+
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(20))
+                .ignoreExceptions()
+                .until(() -> {
+                    Jedis redis = new Jedis(redisHost, redisPort);
+                    redis.set(redisKey, redisValue);
+                    return redisValue.equals(redis.get(redisKey));
+                });
+
+        elastiCache.deleteCacheCluster(b -> b.cacheClusterId(cacheClusterId));
     }
 }
