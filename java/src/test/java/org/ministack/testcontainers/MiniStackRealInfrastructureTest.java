@@ -84,8 +84,6 @@ class MiniStackRealInfrastructureTest {
         Endpoint dbEndpoint = createDbInstanceResponse.dbInstance().endpoint();
         assertNotNull(dbEndpoint);
 
-        String dbInstanceIdentifier = createDbInstanceResponse.dbInstance().dbInstanceIdentifier();
-
         String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s", dbEndpoint.address(), dbEndpoint.port(), dbName);
 
         // We have to wait here until db container ist started
@@ -93,8 +91,6 @@ class MiniStackRealInfrastructureTest {
                 .await().atMost(Duration.ofSeconds(10))
                 .until(() -> DriverManager.getConnection(jdbcUrl, username, password).isValid(10));
 
-        // Manually stop and remove DB container because it is not handled by Testcontainers
-        rds.deleteDBInstance(b -> b.dbInstanceIdentifier(dbInstanceIdentifier));
     }
 
     @Test
@@ -116,17 +112,12 @@ class MiniStackRealInfrastructureTest {
         Endpoint dbEndpoint = createDbInstanceResponse.dbInstance().endpoint();
         assertNotNull(dbEndpoint);
 
-        String dbInstanceIdentifier = createDbInstanceResponse.dbInstance().dbInstanceIdentifier();
-
         String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s", dbEndpoint.address(), dbEndpoint.port(), dbName);
 
         // We have to wait here until db container ist started
         Awaitility.given().ignoreException(PSQLException.class)
                 .await().atMost(Duration.ofSeconds(10))
                 .until(() -> DriverManager.getConnection(jdbcUrl, username, password).isValid(10));
-
-        // Manually stop and remove DB container because it is not handled by Testcontainers
-        rds.deleteDBInstance(b -> b.dbInstanceIdentifier(dbInstanceIdentifier));
     }
 
     @Test
@@ -148,17 +139,12 @@ class MiniStackRealInfrastructureTest {
         Endpoint dbEndpoint = createDbInstanceResponse.dbInstance().endpoint();
         assertNotNull(dbEndpoint);
 
-        String dbInstanceIdentifier = createDbInstanceResponse.dbInstance().dbInstanceIdentifier();
-
         String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s", dbEndpoint.address(), dbEndpoint.port(), dbName);
 
         // We have to wait here until db container ist started
         Awaitility.given().ignoreException(CommunicationsException.class)
                 .await().atMost(Duration.ofSeconds(20))
                 .until(() -> DriverManager.getConnection(jdbcUrl, username, password).isValid(10));
-
-        // Manually stop and remove DB container because it is not handled by Testcontainers
-        rds.deleteDBInstance(b -> b.dbInstanceIdentifier(dbInstanceIdentifier));
     }
 
     @Test
@@ -180,17 +166,12 @@ class MiniStackRealInfrastructureTest {
         Endpoint dbEndpoint = createDbInstanceResponse.dbInstance().endpoint();
         assertNotNull(dbEndpoint);
 
-        String dbInstanceIdentifier = createDbInstanceResponse.dbInstance().dbInstanceIdentifier();
-
         String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s", dbEndpoint.address(), dbEndpoint.port(), dbName);
 
         // We have to wait here until db container ist started
         Awaitility.given().ignoreException(CommunicationsException.class)
                 .await().atMost(Duration.ofSeconds(20))
                 .until(() -> DriverManager.getConnection(jdbcUrl, username, password).isValid(10));
-
-        // Manually stop and remove DB container because it is not handled by Testcontainers
-        rds.deleteDBInstance(b -> b.dbInstanceIdentifier(dbInstanceIdentifier));
     }
 
     @Test
@@ -212,8 +193,6 @@ class MiniStackRealInfrastructureTest {
         Endpoint dbEndpoint = createDbInstanceResponse.dbInstance().endpoint();
         assertNotNull(dbEndpoint);
 
-        String dbInstanceIdentifier = createDbInstanceResponse.dbInstance().dbInstanceIdentifier();
-
         String jdbcUrl = String.format("jdbc:mariadb://%s:%s/%s", dbEndpoint.address(), dbEndpoint.port(), dbName);
 
         // We have to wait here until db container ist started
@@ -221,9 +200,6 @@ class MiniStackRealInfrastructureTest {
                 .await()
                 .atMost(Duration.ofSeconds(20))
                 .until(() -> DriverManager.getConnection(jdbcUrl, username, password).isValid(10));
-
-        // Manually stop and remove DB container because it is not handled by Testcontainers
-        rds.deleteDBInstance(b -> b.dbInstanceIdentifier(dbInstanceIdentifier));
     }
 
     // -----------------------------------------------------------------------
@@ -265,7 +241,5 @@ class MiniStackRealInfrastructureTest {
                     redis.set(redisKey, redisValue);
                     return redisValue.equals(redis.get(redisKey));
                 });
-
-        elastiCache.deleteCacheCluster(b -> b.cacheClusterId(cacheClusterId));
     }
 }

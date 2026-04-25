@@ -5,10 +5,7 @@ import com.github.dockerjava.api.model.Container;
 import org.testcontainers.DockerClientFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
@@ -176,8 +173,8 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
             return;
         }
 
-        final Map<String, String> labelFilter = new HashMap<>();
-        labelFilter.put("ministack", null); // match any container carrying the `ministack` label
+        final List<String> labelFilter = new ArrayList<>();
+        labelFilter.add("ministack"); // match any container carrying the `ministack` label
 
         try {
             List<Container> orphans = client.listContainersCmd()
