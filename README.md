@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://central.sonatype.com/artifact/org.ministack/testcontainers-ministack"><img src="https://img.shields.io/maven-central/v/org.ministack/testcontainers-ministack" alt="Maven Central"></a>
   <a href="https://github.com/ministackorg/testcontainers-ministack/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ministackorg/testcontainers-ministack" alt="License"></a>
-  <a href="https://github.com/ministackorg/ministack"><img src="https://img.shields.io/badge/MiniStack-41%20AWS%20services-blue" alt="MiniStack"></a>
+  <a href="https://github.com/ministackorg/ministack"><img src="https://img.shields.io/badge/MiniStack-55+%20AWS%20services-blue" alt="MiniStack"></a>
 </p>
 
 ---
