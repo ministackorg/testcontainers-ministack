@@ -3,8 +3,6 @@ package org.ministack.testcontainers;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 import org.testcontainers.DockerClientFactory;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -85,16 +83,15 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
     /**
      * Returns the endpoint URL for connecting AWS SDK clients.
      *
-     * @return endpoint URL (e.g. "http://127.0.0.1:32789")
+     * <p>Returns the Testcontainers-reported host directly without forcing
+     * DNS resolution to an IP. Rootless Podman, Colima, and reuse modes
+     * can surface non-resolvable hostnames that nonetheless route correctly
+     * through Docker — resolving them eagerly broke those setups.
+     *
+     * @return endpoint URL (e.g. "http://localhost:32789")
      */
     public String getEndpoint() {
-        try {
-            final String address = getHost();
-            String ipAddress = InetAddress.getByName(address).getHostAddress();
-            return String.format("http://%s:%d", ipAddress, getMappedPort(PORT));
-        } catch (UnknownHostException e) {
-            throw new IllegalStateException("Cannot obtain endpoint URL", e);
-        }
+        return String.format("http://%s:%d", getHost(), getMappedPort(PORT));
     }
 
     /**
