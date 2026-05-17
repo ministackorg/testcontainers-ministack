@@ -72,7 +72,29 @@ public MiniStackContainer miniStackContainer() {
 MiniStackContainer ministack = new MiniStackContainer("1.2.5");
 ```
 
+### Configuration
+
+```java
+MiniStackContainer ministack = new MiniStackContainer("1.3.42")
+    .withRegion("eu-west-1")                              // MINISTACK_REGION
+    .withCredentials("AKIAEXAMPLE000000000", "secret")    // AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+    .withPersistence()                                    // PERSIST_STATE=1 + S3_PERSIST=1
+    .withImdsV2Required();                                // MINISTACK_IMDS_V2_REQUIRED=1
+```
+
+Pair `getMiniStackVersion()` with `Assumptions.assumeTrue(...)` to gate tests on capability:
+
+```java
+assumeTrue(ministack.getMiniStackVersion().compareTo("1.3.42") >= 0,
+    "test requires MiniStack 1.3.42+");
+```
+
+Note: `getMiniStackVersion()` returns the image tag verbatim. Semver tags like `"1.3.42"` sort lexicographically as expected; `"latest"` and `"nightly"` won't. Pin a specific version tag when you need precise capability gating.
+
 ### Real Infrastructure
+
+> **Security warning:** `withRealInfrastructure()` bind-mounts the host Docker socket into the MiniStack container. Anything running inside MiniStack — including arbitrary code in Lambda handlers or RDS init scripts — gains root-equivalent control of the host's container engine. Use only on trusted developer machines or isolated CI runners.
+
 ```java
 try(MiniStackContainer ministack = new MiniStackContainer()){
     ministack.withRealInfrastructure();
