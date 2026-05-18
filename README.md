@@ -55,16 +55,6 @@ try(MiniStackContainer ministack = new MiniStackContainer()){
 }
 ```
 
-### Spring Boot
-
-```java
-@Bean
-@ServiceConnection
-public MiniStackContainer miniStackContainer() {
-    return new MiniStackContainer("latest");
-}
-```
-
 ### Specific version
 
 ```java
@@ -82,7 +72,7 @@ try(MiniStackContainer ministack = new MiniStackContainer()){
     RdsClient rds = RdsClient.builder().endpointOverride(endpoint()).region(region)
             .credentialsProvider(creds).build();
 
-    CreateDbInstanceResponse createDbInstanceResponse = rds.createDBInstance(b -> b
+    rds.createDBInstance(b -> b
             .dbInstanceIdentifier("postgres")
             .dbInstanceClass("db.t3.micro")
             .engine("postgres")
@@ -91,15 +81,21 @@ try(MiniStackContainer ministack = new MiniStackContainer()){
             .dbName("postgresdb")
             .allocatedStorage(20)
     );
-    
-    // Ministack will create and start a postgres docker container
-    // Before you connect to postgres you have to wait until the container is started
+
+    // MiniStack spawns a real Postgres container. Poll DescribeDBInstances
+    // until it reports `available` before opening a JDBC connection.
+    Awaitility.await()
+        .atMost(Duration.ofMinutes(2))
+        .pollInterval(Duration.ofSeconds(2))
+        .until(() -> "available".equals(
+            rds.describeDBInstances(b -> b.dbInstanceIdentifier("postgres"))
+               .dbInstances().get(0).dbInstanceStatus()));
 }
 ```
 
 ### What you get
 
-- All 41 AWS services on a single container
+- 55+ AWS services on a single container
 - Health check waits for readiness automatically
 - `getEndpoint()` returns the mapped URL for SDK configuration
 - Works with any AWS SDK (Java, Go, Python, Node.js)
