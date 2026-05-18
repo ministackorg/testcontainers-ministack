@@ -35,6 +35,8 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
     private static final DockerImageName DEFAULT_IMAGE =
         DockerImageName.parse("ministackorg/ministack");
 
+    private final String imageTag;
+
     /**
      * Create a MiniStack container with the default image and "latest" tag.
      */
@@ -58,6 +60,7 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
      */
     public MiniStackContainer(DockerImageName dockerImageName) {
         super(dockerImageName);
+        this.imageTag = dockerImageName.getVersionPart();
         withExposedPorts(PORT);
         waitingFor(Wait.forHttp("/_ministack/health").forPort(PORT).forStatusCode(200));
         propagateHubImageNamePrefix();
@@ -106,11 +109,108 @@ public class MiniStackContainer extends GenericContainer<MiniStackContainer> {
     /**
      * Activates real infrastructure mode.
      *
-     * RDS spins up actual Postgres/MySQL containers, ElastiCache spins up real Redis, Athena runs real SQL via DuckDB, ECS runs real Docker containers.
+     * <p>RDS spins up actual Postgres/MySQL containers, ElastiCache spins up real
+     * Redis, Athena runs real SQL via DuckDB, ECS runs real Docker containers.
+     *
+     * <p><b>Security warning:</b> this mode bind-mounts the host Docker socket
+     * into the MiniStack container. Anything running inside MiniStack — including
+     * arbitrary code in Lambda handlers or RDS init scripts — gains
+     * root-equivalent control of the host's container engine: it can create,
+     * stop, exec into, and remove <i>any</i> container on the host (not just
+     * MiniStack-spawned ones), and can mount any host path into a sibling
+     * container. Use only on trusted developer machines or in isolated CI
+     * runners.
+     *
      * @return this container instance for chaining
      */
     public MiniStackContainer withRealInfrastructure() {
         return withFileSystemBind(DockerClientFactory.instance().getRemoteDockerUnixSocketPath(), "/var/run/docker.sock");
+    }
+
+    /**
+     * Override the AWS region the emulator reports to clients.
+     *
+     * <p>Sets {@code MINISTACK_REGION}, which is the value returned to clients
+     * via {@code DescribeRegion}-style calls and used as the default region for
+     * generated ARNs. Note: AWS SDK clients still need their own region
+     * configured separately; this only changes the server-side default.
+     *
+     * @param region AWS region (e.g. "eu-west-1"); must be set before {@code start()}
+     * @return this container instance for chaining
+     */
+    public MiniStackContainer withRegion(String region) {
+        return withEnv("MINISTACK_REGION", region);
+    }
+
+    /**
+     * Override the AWS credentials the emulator accepts.
+     *
+     * <p>MiniStack derives the account ID from the access key (a 12-digit key
+     * is treated as the account ID for multi-tenant isolation). Setting custom
+     * credentials lets a test exercise non-default-account behaviour without
+     * passing them through every SDK call site.
+     *
+     * @param accessKey AWS access key id
+     * @param secretKey AWS secret access key
+     * @return this container instance for chaining
+     */
+    public MiniStackContainer withCredentials(String accessKey, String secretKey) {
+        return withEnv("AWS_ACCESS_KEY_ID", accessKey)
+            .withEnv("AWS_SECRET_ACCESS_KEY", secretKey);
+    }
+
+    /**
+     * Enable disk persistence so state survives container restart.
+     *
+     * <p>Sets {@code PERSIST_STATE=1} (in-memory service state — SQS queues,
+     * DynamoDB items, IAM users, Cognito pools, etc., all written to
+     * {@code STATE_DIR} on shutdown and reloaded on boot) and
+     * {@code S3_PERSIST=1} (S3 object bytes written to disk so large objects
+     * survive too). For a fully persistent run you typically also mount a
+     * named volume at {@code /var/lib/ministack} so the data outlives the
+     * container itself; without that, persistence is only within the
+     * container's lifetime.
+     *
+     * @return this container instance for chaining
+     */
+    public MiniStackContainer withPersistence() {
+        return withEnv("PERSIST_STATE", "1").withEnv("S3_PERSIST", "1");
+    }
+
+    /**
+     * Require IMDSv2 (token-based) for instance-metadata calls, mirroring AWS'
+     * 2024 default for new EC2 launches.
+     *
+     * <p>With this enabled, IMDS GET requests without a valid
+     * {@code X-aws-ec2-metadata-token} header are rejected with HTTP 401. Use
+     * to verify your code paths correctly call {@code PUT /latest/api/token}
+     * before any metadata read, instead of relying on the IMDSv1 fallback.
+     *
+     * @return this container instance for chaining
+     */
+    public MiniStackContainer withImdsV2Required() {
+        return withEnv("MINISTACK_IMDS_V2_REQUIRED", "1");
+    }
+
+    /**
+     * Returns the MiniStack version corresponding to the Docker image tag this
+     * container was constructed with.
+     *
+     * <p>Useful for gating tests on capability:
+     * <pre>{@code
+     * assumeTrue(container.getMiniStackVersion().compareTo("1.3.42") >= 0,
+     *     "feature requires MiniStack 1.3.42+");
+     * }</pre>
+     *
+     * <p>Returns the tag verbatim — semver strings like {@code "1.3.42"} sort
+     * lexicographically as expected, but non-semver tags ({@code "latest"},
+     * {@code "1.3"}, {@code "nightly"}) won't. Pin a specific version tag in
+     * the constructor when you need precise capability gating.
+     *
+     * @return the image tag (e.g. {@code "1.3.42"}, {@code "latest"})
+     */
+    public String getMiniStackVersion() {
+        return imageTag;
     }
 
     /**
