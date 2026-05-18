@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Java / Maven build artifacts
+java/target/
+*.class
+
+# Editors
+.idea/
+*.iml
+.vscode/
+
+# Stray test caches that shouldn't be tracked at the repo root.
+# pytest can leave one here if a Python tool is run from java/ by mistake.
+.pytest_cache/
+java/.pytest_cache/
+
+# OS junk
+Thumbs.db

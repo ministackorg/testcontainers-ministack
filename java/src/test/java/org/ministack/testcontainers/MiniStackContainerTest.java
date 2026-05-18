@@ -40,13 +40,27 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Integration tests verifying MiniStack container works with AWS SDK v2 across all major services.
  * One shared container for all tests to keep CI fast.
+ *
+ * <p>Tests run in JUnit's default declaration order; no explicit
+ * {@code @TestMethodOrder} because the suite doesn't rely on any inter-test
+ * sequencing (each test sets up and tears down its own AWS resources with
+ * a unique {@link #uid()} suffix). Use {@code @Order} only if you add a
+ * test that has a true dependency on a prior one.
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class MiniStackContainerTest {
 
     static MiniStackContainer ministack = new MiniStackContainer("latest");
     static StaticCredentialsProvider creds;
     static Region region;
+
+    /**
+     * Pre-computed minimal Python Lambda deployment zip, reused by every
+     * Lambda test that just needs <i>some</i> deployable code (createFunction
+     * shape, listFunctions, getFunctionConfiguration, deleteFunction, etc.).
+     * Building the zip once at class-load time keeps the hot tests fast and
+     * removes the boilerplate of building it inline.
+     */
+    private static final byte[] MINIMAL_PYTHON_ZIP = minimalPythonZip();
 
     @BeforeAll
     static void startContainer() {
@@ -70,7 +84,6 @@ class MiniStackContainerTest {
     // -----------------------------------------------------------------------
 
     @Test
-    @Order(1)
     void containerIsRunning() {
         assertTrue(ministack.isRunning());
         assertNotNull(ministack.getEndpoint());
@@ -268,11 +281,9 @@ class MiniStackContainerTest {
         LambdaClient lambda = LambdaClient.builder().endpointOverride(endpoint()).region(region)
                 .credentialsProvider(creds).build();
         String name = "tc-lambda-" + uid();
-        // Minimal zip with a handler
-        byte[] zip = minimalPythonZip();
         lambda.createFunction(b -> b.functionName(name).runtime("python3.12")
                 .handler("handler.handler").role("arn:aws:iam::000000000000:role/test")
-                .code(c -> c.zipFile(SdkBytes.fromByteArray(zip))));
+                .code(c -> c.zipFile(SdkBytes.fromByteArray(MINIMAL_PYTHON_ZIP))));
         assertTrue(lambda.listFunctions().functions().stream()
                 .anyMatch(f -> f.functionName().equals(name)));
     }
@@ -282,10 +293,9 @@ class MiniStackContainerTest {
         LambdaClient lambda = LambdaClient.builder().endpointOverride(endpoint()).region(region)
                 .credentialsProvider(creds).build();
         String name = "tc-lambdacfg-" + uid();
-        byte[] zip = minimalPythonZip();
         lambda.createFunction(b -> b.functionName(name).runtime("python3.12")
                 .handler("handler.handler").role("arn:aws:iam::000000000000:role/test")
-                .code(c -> c.zipFile(SdkBytes.fromByteArray(zip))).memorySize(256));
+                .code(c -> c.zipFile(SdkBytes.fromByteArray(MINIMAL_PYTHON_ZIP))).memorySize(256));
         var cfg = lambda.getFunctionConfiguration(b -> b.functionName(name));
         assertEquals(256, cfg.memorySize());
         assertEquals("python3.12", cfg.runtime().toString());
@@ -296,10 +306,9 @@ class MiniStackContainerTest {
         LambdaClient lambda = LambdaClient.builder().endpointOverride(endpoint()).region(region)
                 .credentialsProvider(creds).build();
         String name = "tc-lambdadel-" + uid();
-        byte[] zip = minimalPythonZip();
         lambda.createFunction(b -> b.functionName(name).runtime("python3.12")
                 .handler("handler.handler").role("arn:aws:iam::000000000000:role/test")
-                .code(c -> c.zipFile(SdkBytes.fromByteArray(zip))));
+                .code(c -> c.zipFile(SdkBytes.fromByteArray(MINIMAL_PYTHON_ZIP))));
         lambda.deleteFunction(b -> b.functionName(name));
         assertFalse(lambda.listFunctions().functions().stream()
                 .anyMatch(f -> f.functionName().equals(name)));
