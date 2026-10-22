@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <LangVersion>latest</LangVersion>
+        <Nullable>disable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+    <PropertyGroup>
+        <PackageId>Testcontainers.MiniStack</PackageId>
+        <Version>0.1.0</Version>
+        <Authors>ministackorg</Authors>
+        <Description>Testcontainers module for MiniStack, a free, open-source AWS emulator.</Description>
+        <PackageTags>testcontainers;ministack;aws;emulator;testing;docker</PackageTags>
+        <PackageProjectUrl>https://github.com/ministackorg/testcontainers-ministack</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/ministackorg/testcontainers-ministack</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>ministack_logo.png</PackageIcon>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Testcontainers" Version="4.16.0"/>
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" PrivateAssets="All"/>
+    </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="Testcontainers.MiniStack.Tests"/>
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="../../README.md" Pack="true" PackagePath="/"/>
+        <None Include="../../../ministack_logo.png" Pack="true" PackagePath="/"/>
+    </ItemGroup>
+</Project>

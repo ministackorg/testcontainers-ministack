@@ -123,6 +123,91 @@ try(MiniStackContainer ministack = new MiniStackContainer()){
 - Works with any AWS SDK (Java, Go, Python, Node.js)
 - Real database containers (RDS, ElastiCache) when Docker socket is mounted
 
+## .NET
+
+### Installation
+
+```bash
+dotnet add package Testcontainers.MiniStack
+```
+
+Targets `net8.0` and `net9.0`, built on [Testcontainers for .NET](https://dotnet.testcontainers.org/).
+
+### Quick start
+
+```csharp
+await using var ministack = new MiniStackBuilder().Build();
+await ministack.StartAsync();
+
+var s3 = new AmazonS3Client(
+    new BasicAWSCredentials(ministack.GetAccessKey(), ministack.GetSecretKey()),
+    new AmazonS3Config
+    {
+        ServiceURL = ministack.GetEndpoint(),
+        AuthenticationRegion = ministack.GetRegion(),
+        ForcePathStyle = true,
+    });
+
+await s3.PutBucketAsync("my-bucket");
+```
+
+With xUnit, start one container per test class through a class fixture that implements `IAsyncLifetime`.
+
+### Specific version
+
+```csharp
+// Pin to a specific MiniStack release
+var ministack = new MiniStackBuilder("ministackorg/ministack:1.2.5").Build();
+```
+
+`WithImage("ministackorg/ministack:1.2.5")` works too.
+
+### Configuration
+
+```csharp
+var ministack = new MiniStackBuilder("ministackorg/ministack:1.3.42")
+    .WithRegion("eu-west-1")                              // MINISTACK_REGION
+    .WithCredentials("AKIAEXAMPLE000000000", "secret")    // AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+    .WithPersistence()                                    // PERSIST_STATE=1 + S3_PERSIST=1
+    .WithImdsV2Required()                                 // MINISTACK_IMDS_V2_REQUIRED=1
+    .Build();
+```
+
+`GetMiniStackVersion()` returns the image tag, as in Java. `GetMiniStackVersionAsync()` asks the running server, so it also resolves `latest`:
+
+```csharp
+var version = Version.Parse(await ministack.GetMiniStackVersionAsync());
+Assert.SkipUnless(version >= new Version(1, 3, 42), "test requires MiniStack 1.3.42+");
+```
+
+If Testcontainers is configured with a hub image name prefix (`TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX` or `hub.image.name.prefix`), it is passed to MiniStack as `MINISTACK_IMAGE_PREFIX`, so the nested RDS, ElastiCache, EKS and Lambda images come from the same registry.
+
+### Real Infrastructure
+
+> **Security warning:** `WithRealInfrastructure()` bind-mounts the host Docker socket into the MiniStack container. Anything running inside MiniStack — including arbitrary code in Lambda handlers or RDS init scripts — gains root-equivalent control of the host's container engine. Use only on trusted developer machines or isolated CI runners.
+
+```csharp
+await using var ministack = new MiniStackBuilder().WithRealInfrastructure().Build();
+await ministack.StartAsync();
+
+var rds = new AmazonRDSClient(credentials, new AmazonRDSConfig { ServiceURL = ministack.GetEndpoint() });
+var db = await rds.CreateDBInstanceAsync(new CreateDBInstanceRequest
+{
+    DBInstanceIdentifier = "postgres",
+    DBInstanceClass = "db.t3.micro",
+    Engine = "postgres",
+    MasterUsername = "admin",
+    MasterUserPassword = "password",
+    DBName = "postgresdb",
+    AllocatedStorage = 20,
+});
+
+// MiniStack spawns a real Postgres container at db.DBInstance.Endpoint.
+// Retry the first connection until it accepts.
+```
+
+Disposing the container also removes the RDS, ElastiCache, ECS, EKS and Lambda containers that this MiniStack spawned. Containers that another MiniStack on the same Docker daemon spawned are left alone.
+
 ## Other languages
 
 Coming when requested. Open an issue or upvote [ministackorg/ministack](https://github.com/ministackorg/ministack/issues/250).
@@ -132,7 +217,7 @@ Coming when requested. Open an issue or upvote [ministackorg/ministack](https://
 | Java     | **Published** on Maven Central |
 | Go       | Planned                        |
 | Python   | Planned                        |
-| .NET     | Planned                        |
+| .NET     | In this repo (`dotnet/`), not yet on NuGet |
 
 ## License
 

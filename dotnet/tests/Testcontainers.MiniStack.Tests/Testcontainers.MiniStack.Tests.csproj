@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <LangVersion>latest</LangVersion>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0"/>
+        <PackageReference Include="xunit.v3" Version="4.0.2"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1"/>
+        <PackageReference Include="AWSSDK.S3" Version="4.0.104.6"/>
+        <PackageReference Include="AWSSDK.SQS" Version="4.0.100.20"/>
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.109.1"/>
+        <PackageReference Include="AWSSDK.Lambda" Version="4.0.110.2"/>
+        <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.101.6"/>
+        <PackageReference Include="AWSSDK.RDS" Version="4.0.107.1"/>
+        <PackageReference Include="AWSSDK.ElastiCache" Version="4.0.103.1"/>
+        <PackageReference Include="Npgsql" Version="10.0.3"/>
+        <PackageReference Include="StackExchange.Redis" Version="3.4.5"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../../src/Testcontainers.MiniStack/Testcontainers.MiniStack.csproj"/>
+    </ItemGroup>
+</Project>
